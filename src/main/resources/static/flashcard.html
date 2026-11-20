@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Học Flashcard - EnglishPro</title>
+    <title>Học Flashcard Thông Minh - Spaced Repetition (SM-2)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
         .scene {
             width: 100%;
             max-width: 550px;
-            height: 360px;
+            height: 350px;
             perspective: 1000px;
             margin: 0 auto;
             cursor: pointer;
@@ -58,7 +58,7 @@
         }
 
         .progress-bar-custom {
-            height: 12px;
+            height: 10px;
             border-radius: 6px;
             background-color: #e2e8f0;
             overflow: hidden;
@@ -82,31 +82,118 @@
             margin-top: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.03);
         }
+
+        /* Nút SRS 4 mức độ */
+        .btn-srs {
+            flex: 1;
+            padding: 10px 8px;
+            border-radius: 14px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+            border: 2px solid transparent;
+        }
+        .btn-srs:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+        }
+
+        .btn-srs-again { background-color: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+        .btn-srs-again:hover { background-color: #dc2626; color: #fff; }
+
+        .btn-srs-hard { background-color: #ffedd5; color: #ea580c; border-color: #fdba74; }
+        .btn-srs-hard:hover { background-color: #ea580c; color: #fff; }
+
+        .btn-srs-good { background-color: #dcfce7; color: #16a34a; border-color: #86efac; }
+        .btn-srs-good:hover { background-color: #16a34a; color: #fff; }
+
+        .btn-srs-easy { background-color: #e0f2fe; color: #0284c7; border-color: #7dd3fc; }
+        .btn-srs-easy:hover { background-color: #0284c7; color: #fff; }
+
+        .srs-interval {
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: block;
+            margin-top: 2px;
+        }
+
+        /* Floating XP Toast */
+        #xp-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            transform: translateY(-50px);
+            opacity: 0;
+            pointer-events: none;
+        }
+        #xp-toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
 
 <div id="header-container"></div>
 
-<div class="container py-4" style="max-width: 700px;">
+<!-- TOAST THÔNG BÁO XP & SRS -->
+<div id="xp-toast" class="alert alert-success shadow-lg rounded-pill px-4 py-2 d-flex align-items-center gap-2 border-0">
+    <span class="fs-4">⭐</span>
+    <div>
+        <div class="fw-bold" id="xp-toast-title">+10 XP</div>
+        <small class="text-muted" id="xp-toast-sub">Lịch ôn tiếp theo: sau 6 ngày</small>
+    </div>
+</div>
+
+<div class="container py-4" style="max-width: 750px;">
+
+    <!-- GAMIFICATION & SRS HEADER -->
+    <div class="card p-3 border-0 shadow-sm rounded-4 mb-3 bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fs-6 fw-bold">
+                    🔥 Streak: <span id="user-streak">0</span> ngày
+                </span>
+                <span class="badge bg-primary px-3 py-2 rounded-pill fs-6 fw-bold">
+                    ⭐ <span id="user-xp">0</span> XP
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-secondary border rounded-pill px-3 py-2 small fw-semibold">
+                    <i class="bi bi-cpu text-primary me-1"></i> Thuật toán: <span id="current-strategy-badge">SM-2 (SuperMemo)</span>
+                </span>
+            </div>
+        </div>
+    </div>
+
     <!-- HEADER & ĐIỀU HƯỚNG -->
     <div class="d-flex justify-content-between align-items-center mb-3">
         <a id="back-link" href="#" class="btn btn-outline-secondary rounded-pill btn-sm">
             <i class="bi bi-arrow-left"></i> Danh Sách Từ Vựng
         </a>
-        <span class="fw-bold text-primary fs-5" id="card-index">0 / 0</span>
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-warning text-dark rounded-pill fw-semibold" id="btn-filter-due" onclick="toggleDueFilter()">
+                <i class="bi bi-clock-history me-1"></i> <span id="due-filter-text">Lọc từ đến hạn (SRS)</span>
+            </button>
+            <span class="fw-bold text-primary fs-5" id="card-index">0 / 0</span>
+        </div>
     </div>
 
     <!-- THANH TIẾN ĐỘ HỌC THUỘC -->
-    <div class="card p-3 border-0 shadow-sm rounded-4 mb-4">
+    <div class="card p-3 border-0 shadow-sm rounded-4 mb-3">
         <div class="d-flex justify-content-between align-items-center mb-1 fs-6">
-            <span class="fw-bold text-dark"><i class="bi bi-trophy text-warning me-1"></i> Tiến độ thuộc chủ đề:</span>
+            <span class="fw-bold text-dark"><i class="bi bi-trophy text-warning me-1"></i> <span id="topic-display-title">Tiến độ chủ đề:</span></span>
             <span class="fw-bold text-success" id="progress-percent">0%</span>
         </div>
         <div class="progress-bar-custom">
             <div class="progress-fill" id="progress-fill"></div>
         </div>
-        <div class="text-end text-muted small mt-1" id="progress-text">Đã thuộc 0 / 0 từ</div>
+        <div class="d-flex justify-content-between text-muted small mt-1">
+            <span id="srs-due-info">Cần ôn: 0 từ</span>
+            <span id="progress-text">Đã thuộc 0 / 0 từ</span>
+        </div>
     </div>
 
     <!-- KHU VỰC THẺ FLASHCARD -->
@@ -128,36 +215,56 @@
                 <!-- MẶT SAU -->
                 <div class="card-face card-face-back">
                     <h2 class="fw-bold text-success mb-2" id="meaning-text">Nghĩa Tiếng Việt</h2>
-                    <div id="extra-info" class="w-100 overflow-auto" style="max-height: 200px;"></div>
-                    <small class="text-muted mt-3"><i class="bi bi-arrow-repeat me-1"></i> Bấm để lật lại mặt trước</small>
+                    <div id="extra-info" class="w-100 overflow-auto" style="max-height: 180px;"></div>
+                    <small class="text-muted mt-2"><i class="bi bi-arrow-repeat me-1"></i> Bấm để lật lại mặt trước</small>
                 </div>
             </div>
         </div>
 
-        <!-- 3 NÚT THAO TÁC -->
-        <div class="d-flex justify-content-center align-items-center gap-2 gap-md-3 mt-4">
-            <button id="btn-prev" class="btn btn-outline-secondary btn-lg rounded-pill px-3 px-md-4 fw-bold shadow-sm" onclick="prevCard()" disabled>
-                <i class="bi bi-arrow-left-circle me-1"></i> Từ trước
-            </button>
+        <!-- THANH ĐIỀU HƯỚNG & 4 NÚT THUẬT TOÁN SM-2 (STRATEGY PATTERN) -->
+        <div class="mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                <small class="fw-bold text-secondary">
+                    <i class="bi bi-mortarboard-fill text-primary me-1"></i> Đánh giá chất lượng ghi nhớ (SM-2):
+                </small>
+                <button id="btn-prev" class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="prevCard()" disabled>
+                    <i class="bi bi-arrow-left"></i> Từ trước
+                </button>
+            </div>
 
-            <button class="btn btn-outline-danger btn-lg rounded-pill px-3 px-md-4 fw-bold shadow-sm" onclick="markVocabulary(false)">
-                <i class="bi bi-x-circle-fill me-1"></i> Chưa thuộc
-            </button>
+            <!-- 4 NÚT SM-2 / LEITNER SRS -->
+            <div class="d-flex gap-2">
+                <button class="btn btn-srs btn-srs-again" onclick="reviewCard('AGAIN')">
+                    🔄 Quên
+                    <span class="srs-interval opacity-75">1 ngày | +2 XP</span>
+                </button>
 
-            <button class="btn btn-success btn-lg rounded-pill px-3 px-md-4 fw-bold shadow-sm" onclick="markVocabulary(true)">
-                <i class="bi bi-check-circle-fill me-1"></i> Đã thuộc
-            </button>
+                <button class="btn btn-srs btn-srs-hard" onclick="reviewCard('HARD')">
+                    ⏳ Khó
+                    <span class="srs-interval opacity-75">3 ngày | +5 XP</span>
+                </button>
+
+                <button class="btn btn-srs btn-srs-good" onclick="reviewCard('GOOD')">
+                    👍 Tốt
+                    <span class="srs-interval opacity-75">6 ngày | +10 XP</span>
+                </button>
+
+                <button class="btn btn-srs btn-srs-easy" onclick="reviewCard('EASY')">
+                    ⚡ Dễ
+                    <span class="srs-interval opacity-75">15 ngày | +15 XP</span>
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- MÀN HÌNH HOÀN THÀNH CHỦ ĐỀ -->
+    <!-- MÀN HÌNH HOÀN THÀNH PHIÊN HỌC -->
     <div id="completion-screen" class="card border-0 shadow p-5 text-center rounded-4 d-none">
-        <div class="display-1 text-warning mb-3">🎉</div>
-        <h2 class="fw-bold text-dark">Chúc mừng bạn!</h2>
-        <p class="lead text-secondary" id="completion-desc">Bạn đã xem hết tất cả từ vựng trong chủ đề này.</p>
+        <div class="display-1 text-warning mb-3">🏆</div>
+        <h2 class="fw-bold text-dark">Tuyệt vời! Hoàn thành phiên học!</h2>
+        <p class="lead text-secondary" id="completion-desc">Bạn đã hoàn thành các từ vựng trong lượt ôn này.</p>
 
         <div class="d-flex justify-content-center flex-wrap gap-2 mt-4" id="completion-actions">
-            <!-- Nút bấm dynamic JS -->
+            <!-- Nút dynamic -->
         </div>
     </div>
 </div>
@@ -168,41 +275,65 @@
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('user') || '{}');
     const userId = currentUser.id || 1;
 
+    let originalVocabList = [];
+    let vocabList = [];
+    let progressMap = {};
+    let currentIndex = 0;
+    let isDueOnlyMode = false;
+    let selectedStrategy = "SM-2";
+
     document.getElementById('back-link').href = `/vocabulary.html?topicId=${topicId}`;
 
-    // Tải tên File và Thư mục
+    // Tải thông tin Topic & Stats
     fetch(`/api/topics/${topicId}`)
         .then(res => res.json())
         .then(t => {
             if (t.title) {
                 const prefix = t.folderName ? `[${t.folderName}] ` : '';
-                document.getElementById('topic-display-title').innerHTML = `<i class="bi bi-trophy text-warning me-1"></i> ${prefix}<strong>${t.title}</strong>:`;
+                document.getElementById('topic-display-title').innerHTML = `${prefix}<strong>${t.title}</strong>:`;
             }
         })
         .catch(console.error);
-    let vocabList = [];         // Danh sách từ vựng đang học (có thể đã qua lọc)
-    let progressMap = {};
-    let currentIndex = 0;
 
-    // 1. Tải danh sách từ vựng & tiến độ học của User
-    Promise.all([
-        fetch(`/api/vocabularies/topic/${topicId}`).then(r => r.json()),
-        fetch(`/api/progress/topic/${topicId}/user/${userId}`).then(r => r.json())
-    ]).then(([vocabs, progressList]) => {
-        originalVocabList = vocabs.filter(v => !v.word.toLowerCase().includes('topic 7') && v.word.toLowerCase() !== 'word');
-        vocabList = [...originalVocabList];
+    // Tải thống kê Gamification (Streak, XP)
+    function loadGamificationStats() {
+        fetch(`/api/progress/stats/user/${userId}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('user-streak').innerText = data.streak || 0;
+                document.getElementById('user-xp').innerText = data.totalXp || 0;
+            })
+            .catch(console.error);
+    }
 
-        progressList.forEach(p => {
-            progressMap[p.vocabularyId] = p.mastered;
+    // 1. Tải danh sách từ vựng & tiến độ học
+    function initData() {
+        loadGamificationStats();
+
+        Promise.all([
+            fetch(`/api/vocabularies/topic/${topicId}`).then(r => r.json()),
+            fetch(`/api/progress/topic/${topicId}/user/${userId}`).then(r => r.json()),
+            fetch(`/api/progress/due/topic/${topicId}/user/${userId}`).then(r => r.json())
+        ]).then(([vocabs, progressList, dueList]) => {
+            originalVocabList = vocabs.filter(v => !v.word.toLowerCase().includes('topic 7') && v.word.toLowerCase() !== 'word');
+            vocabList = [...originalVocabList];
+
+            progressList.forEach(p => {
+                progressMap[p.vocabularyId] = p;
+            });
+
+            document.getElementById('srs-due-info').innerText = `Đến hạn ôn: ${dueList.length} từ`;
+
+            if (vocabList.length > 0) {
+                updateProgressHeader();
+                renderCard();
+            } else {
+                alert('Chủ đề này chưa có từ vựng nào!');
+            }
         });
+    }
 
-        if (vocabList.length > 0) {
-            updateProgressHeader();
-            renderCard();
-        } else {
-            alert('Chủ đề này chưa có từ vựng nào!');
-        }
-    });
+    initData();
 
     // 2. Hiển thị thông tin thẻ hiện tại
     function renderCard() {
@@ -245,28 +376,59 @@
         document.getElementById('flashcard').classList.toggle('is-flipped');
     }
 
-    // 4. Bấm "Đã thuộc" hoặc "Chưa thuộc"
-    function markVocabulary(isMastered) {
+    // 4. Bấm 4 nút đánh giá SRS (Strategy Pattern: SM-2)
+    function reviewCard(rating) {
         const item = vocabList[currentIndex];
-        progressMap[item.id] = isMastered;
 
-        fetch('/api/progress/update', {
+        fetch('/api/progress/review-srs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 userId: userId,
                 vocabularyId: item.id,
                 topicId: parseInt(topicId),
-                mastered: isMastered
+                rating: rating,
+                strategy: selectedStrategy
             })
-        });
+        })
+        .then(res => res.json())
+        .then(data => {
+            progressMap[item.id] = data;
 
-        updateProgressHeader();
-        currentIndex++;
-        renderCard();
+            // Cập nhật số liệu Header
+            if (data.streak !== undefined) document.getElementById('user-streak').innerText = data.streak;
+            if (data.totalXp !== undefined) document.getElementById('user-xp').innerText = data.totalXp;
+
+            // Hiển thị Floating Toast XP
+            showXpToast(`+${data.xpEarned} XP!`, data.message || `Lịch ôn tiếp theo: sau ${data.intervalDays} ngày`);
+
+            updateProgressHeader();
+            currentIndex++;
+            renderCard();
+        })
+        .catch(err => {
+            console.error(err);
+            // Fallback chuyển thẻ nếu offline
+            currentIndex++;
+            renderCard();
+        });
     }
 
-    // 5. Nút LÙI LẠI TỪ TRƯỚC
+    // Floating XP Toast popup
+    let toastTimeout;
+    function showXpToast(title, subtitle) {
+        const toast = document.getElementById('xp-toast');
+        document.getElementById('xp-toast-title').innerText = title;
+        document.getElementById('xp-toast-sub').innerText = subtitle;
+
+        toast.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 2500);
+    }
+
+    // 5. Nút Lùi lại
     function prevCard() {
         if (currentIndex > 0) {
             currentIndex--;
@@ -274,10 +436,10 @@
         }
     }
 
-    // 6. Cập nhật thanh % tiến độ dựa trên danh sách gốc
+    // 6. Cập nhật thanh % tiến độ
     function updateProgressHeader() {
         const total = originalVocabList.length;
-        const masteredCount = originalVocabList.filter(v => progressMap[v.id] === true).length;
+        const masteredCount = originalVocabList.filter(v => progressMap[v.id] && progressMap[v.id].mastered).length;
         const percent = total > 0 ? Math.round((masteredCount / total) * 100) : 0;
 
         document.getElementById('progress-percent').innerText = `${percent}%`;
@@ -285,77 +447,67 @@
         document.getElementById('progress-text').innerText = `Đã thuộc ${masteredCount} / ${total} từ`;
     }
 
-    // 7. Màn hình hoàn thành
+    // 7. Lọc chỉ ôn từ đến hạn
+    function toggleDueFilter() {
+        isDueOnlyMode = !isDueOnlyMode;
+        const btn = document.getElementById('btn-filter-due');
+        const text = document.getElementById('due-filter-text');
+
+        if (isDueOnlyMode) {
+            btn.classList.remove('btn-outline-warning');
+            btn.classList.add('btn-warning');
+            text.innerText = "Đang lọc: Từ đến hạn (SRS)";
+
+            fetch(`/api/progress/due/topic/${topicId}/user/${userId}`)
+                .then(r => r.json())
+                .then(dueList => {
+                    const dueIds = new Set(dueList.map(d => d.vocabularyId));
+                    vocabList = originalVocabList.filter(v => dueIds.has(v.id));
+                    if (vocabList.length === 0) {
+                        alert("Tuyệt vời! Hiện tại không có từ nào đến hạn cần ôn trong chủ đề này!");
+                        toggleDueFilter();
+                        return;
+                    }
+                    currentIndex = 0;
+                    renderCard();
+                });
+        } else {
+            btn.classList.remove('btn-warning');
+            btn.classList.add('btn-outline-warning');
+            text.innerText = "Lọc từ đến hạn (SRS)";
+            vocabList = [...originalVocabList];
+            currentIndex = 0;
+            renderCard();
+        }
+    }
+
+    // 8. Màn hình hoàn thành
     function showCompletion() {
         document.getElementById('flashcard-container').classList.add('d-none');
         document.getElementById('completion-screen').classList.remove('d-none');
 
         const total = originalVocabList.length;
-        const unmasteredCount = originalVocabList.filter(v => !progressMap[v.id]).length;
-        const masteredCount = total - unmasteredCount;
+        const masteredCount = originalVocabList.filter(v => progressMap[v.id] && progressMap[v.id].mastered).length;
+        const unmasteredCount = total - masteredCount;
 
         const actionContainer = document.getElementById('completion-actions');
+        document.getElementById('completion-desc').innerHTML =
+            `Bạn đã ôn xong lượt này! Hệ thống đã ghi nhận điểm kinh nghiệm & lập lịch ôn tập thông minh bằng thuật toán <strong>${selectedStrategy}</strong>.`;
 
-        if (unmasteredCount === 0) {
-            document.getElementById('completion-desc').innerHTML =
-                `<strong class="text-success">Tuyệt vời! Bạn đã thuộc toàn bộ ${total}/${total} từ vựng trong chủ đề này! 🏆</strong>`;
-
-            actionContainer.innerHTML = `
-                <button class="btn btn-primary rounded-pill px-4 py-2 fw-bold" onclick="reviewAll()">
-                    <i class="bi bi-arrow-repeat me-1"></i> Ôn lại tất cả
-                </button>
-                <button class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold" onclick="resetTopicProgress()">
-                    <i class="bi bi-arrow-counterclockwise me-1"></i> Học lại từ 0%
-                </button>
-            `;
-        } else {
-            document.getElementById('completion-desc').innerHTML =
-                `Bạn đã thuộc <strong>${masteredCount}/${total}</strong> từ. Còn <strong>${unmasteredCount}</strong> từ chưa thuộc.`;
-
-            actionContainer.innerHTML = `
-                <button class="btn btn-warning text-dark rounded-pill px-4 py-2 fw-bold" onclick="reviewUnmasteredOnly()">
-                    🎯 Chỉ ôn ${unmasteredCount} từ chưa thuộc
-                </button>
-                <button class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold" onclick="reviewAll()">
-                    🔄 Ôn lại tất cả (${total} từ)
-                </button>
-            `;
-        }
-    }
-
-    // 8. Các hàm điều hướng học lại
-    function reviewUnmasteredOnly() {
-        vocabList = originalVocabList.filter(v => !progressMap[v.id]);
-        currentIndex = 0;
-        renderCard();
+        actionContainer.innerHTML = `
+            <button class="btn btn-primary rounded-pill px-4 py-2 fw-bold" onclick="reviewAll()">
+                <i class="bi bi-arrow-repeat me-1"></i> Ôn lại tất cả (${total} từ)
+            </button>
+            <a href="/vocabulary.html?topicId=${topicId}" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-bold">
+                <i class="bi bi-card-checklist me-1"></i> Về danh sách từ vựng
+            </a>
+        `;
     }
 
     function reviewAll() {
         vocabList = [...originalVocabList];
         currentIndex = 0;
         renderCard();
-    }
-
-    function resetTopicProgress() {
-        if (confirm("Bạn có chắc muốn đặt lại tiến độ bài học này về 0%?")) {
-            originalVocabList.forEach(v => {
-                progressMap[v.id] = false;
-                fetch('/api/progress/update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: userId,
-                        vocabularyId: v.id,
-                        topicId: parseInt(topicId),
-                        mastered: false
-                    })
-                });
-            });
-            vocabList = [...originalVocabList];
-            currentIndex = 0;
-            updateProgressHeader();
-            renderCard();
-        }
     }
 
     function playAudio(audioUrl, word, lang) {

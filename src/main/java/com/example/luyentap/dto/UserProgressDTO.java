@@ -2,10 +2,14 @@ package com.example.luyentap.dto;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserProgressDTO {
@@ -21,4 +25,11 @@ public class UserProgressDTO {
     private Long topicId;
 
     private boolean mastered;
+
+    // SRS Metadata
+    private int repetitions;
+    private int intervalDays;
+    private double easeFactor;
+    private LocalDateTime lastReviewedAt;
+    private LocalDateTime nextReviewAt;
 }
