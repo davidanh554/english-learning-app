@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Tutor - EnglishPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+
+<!-- Container nạp Header từ layout.js -->
+<div id="header-container"></div>
+
+<div class="container my-4">
+    <div class="card shadow-lg mx-auto" style="max-width: 650px; border-radius: 15px;">
+        <div class="card-header bg-primary text-white text-center fw-bold fs-5 py-3">
+             AI Tutor - Trợ Lý Giao Tiếp Tiếng Anh
+        </div>
+
+        <!-- Khung hiển thị nội dung Chat -->
+        <div class="card-body overflow-auto p-3" id="chat-messages" style="height: 420px; background-color: #f8f9fa;">
+            <div class="text-start mb-3">
+                    <span class="badge bg-secondary p-2 text-wrap text-start lh-base fs-6">
+                        Hello! I am your AI English tutor. You can type a message or tap the Mic button to talk with me!
+                    </span>
+            </div>
+        </div>
+
+        <!-- Khung nhập liệu tích hợp cả Chat & Voice -->
+        <div class="card-footer bg-white p-3">
+            <div class="input-group">
+                <!-- Nút Mic -->
+                <button id="mic-btn" class="btn btn-outline-danger" type="button" onclick="toggleVoice()" title="Bấm để nói">
+                    <i class="bi bi-mic-fill fs-5" id="mic-icon"></i>
+                </button>
+
+                <!-- Ô nhập chữ -->
+                <input type="text" id="user-input" class="form-control" placeholder="Nhập tin nhắn tiếng Anh..." onkeypress="handleKeyPress(event)">
+
+                <!-- Nút Gửi -->
+                <button class="btn btn-primary px-4 fw-bold" type="button" onclick="sendTextMessage()">
+                    Gửi <i class="bi bi-send-fill ms-1"></i>
+                </button>
+            </div>
+
+            <!-- Trạng thái Micro -->
+            <div id="mic-status" class="small text-muted text-center mt-2" style="min-height: 20px;"></div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/layout.js"></script>
+<script>
+    // --- XỬ LÝ NHẬN DIỆN GIỌNG NÓI (VOICE) ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+    let isRecording = false;
+
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.continuous = false;
+
+        recognition.onresult = function(event) {
+            const userText = event.results[0][0].transcript;
+            resetMicUI();
+            if (userText.trim()) {
+                appendMessage(userText, 'user');
+                sendToAiServer(userText);
+            }
+        };
+
+        recognition.onerror = function() {
+            resetMicUI();
+            document.getElementById('mic-status').innerText = "❌ Không nhận diện được giọng nói, vui lòng thử lại!";
+        };
+
+        recognition.onend = function() {
+            resetMicUI();
+        };
+    } else {
+        document.getElementById('mic-btn').disabled = true;
+        document.getElementById('mic-status').innerText = "⚠️ Trình duyệt của bạn không hỗ trợ thu âm, vui lòng gõ phím.";
+    }
+
+    function toggleVoice() {
+        if (!recognition) return;
+
+        if (!isRecording) {
+            recognition.start();
+            isRecording = true;
+            document.getElementById('mic-btn').classList.replace('btn-outline-danger', 'btn-danger');
+            document.getElementById('mic-status').innerHTML = '<span class="text-danger fw-bold">🔴 Đang lắng nghe... Hãy nói tiếng Anh!</span>';
+        } else {
+            recognition.stop();
+            resetMicUI();
+        }
+    }
+
+    function resetMicUI() {
+        isRecording = false;
+        const micBtn = document.getElementById('mic-btn');
+        if (micBtn) {
+            micBtn.classList.replace('btn-danger', 'btn-outline-danger');
+        }
+        document.getElementById('mic-status').innerText = "";
+    }
+
+    // --- XỬ LÝ CHAT BẰNG CHỮ (TEXT) ---
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            sendTextMessage();
+        }
+    }
+
+    function sendTextMessage() {
+        const inputEl = document.getElementById('user-input');
+        const text = inputEl.value.trim();
+
+        if (!text) return;
+
+        appendMessage(text, 'user');
+        inputEl.value = '';
+        sendToAiServer(text);
+    }
+
+    // --- HIỂN THỊ VÀ GỬI REQUEST VỀ BACKEND SPRING BOOT ---
+    function appendMessage(text, sender) {
+        const container = document.getElementById('chat-messages');
+        const isUser = sender === 'user';
+
+        const alignClass = isUser ? 'text-end' : 'text-start';
+        const bgClass = isUser ? 'bg-primary text-white' : 'bg-white border text-dark';
+        const badgeStyle = isUser ? 'border-radius: 15px 15px 0 15px;' : 'border-radius: 15px 15px 15px 0;';
+
+        container.innerHTML += `
+            <div class="${alignClass} mb-3">
+                <div class="d-inline-block p-2 px-3 shadow-sm ${bgClass}" style="max-width: 80%; ${badgeStyle} text-align: left; white-space: pre-line;">
+                    ${text}
+                </div>
+            </div>
+        `;
+        container.scrollTop = container.scrollHeight;
+    }
+
+    // 1. Thêm hàm đọc tiếng Anh bằng trình duyệt (Xử lý tức thì, 0s độ trễ)
+    function speakNative(text) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    // 2. Thay thế hàm sendToAiServer cũ bằng hàm này
+    async function sendToAiServer(text) {
+        const container = document.getElementById('chat-messages');
+        const msgId = 'ai-msg-' + Date.now();
+
+        // Tạo ô chứa tin nhắn trống
+        container.innerHTML += `
+            <div class="text-start mb-3">
+                <div id="${msgId}" class="d-inline-block p-2 px-3 bg-white border text-dark shadow-sm" style="max-width: 80%; border-radius: 15px 15px 15px 0; text-align: left;">
+                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                </div>
+            </div>
+        `;
+        container.scrollTop = container.scrollHeight;
+
+        const msgEl = document.getElementById(msgId);
+        let fullReply = "";
+
+        try {
+            const response = await fetch('/api/ai/chat-stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split("\n");
+
+                for (let line of lines) {
+                    if (line.startsWith("data: ")) {
+                        try {
+                            const json = JSON.parse(line.replace("data: ", ""));
+                            const textChunk = json?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                            if (textChunk) {
+                                if (fullReply === "") msgEl.innerHTML = ""; // Xóa icon loading
+                                fullReply += textChunk;
+                                msgEl.innerText = fullReply; // Cập nhật từng từ lên màn hình ngay
+                                container.scrollTop = container.scrollHeight;
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+
+            // Khi gõ hết câu thì bắt đầu đọc âm thanh
+            if (fullReply) {
+                speakNative(fullReply);
+            }
+        } catch (err) {
+            msgEl.innerText = "Không thể kết nối đến máy chủ AI!";
+        }
+    }
+</script>
+</body>
+</html>

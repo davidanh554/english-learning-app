@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học Tiếng Anh Thông Minh - EnglishPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        .hero-section {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border-radius: 24px;
+            padding: 45px 30px;
+            margin-bottom: 35px;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.3);
+        }
+
+        /* CARD THƯ MỤC CHỦ ĐỀ */
+        .folder-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: white;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .folder-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 6px;
+            height: 100%;
+            background: #4f46e5;
+            transition: width 0.3s ease;
+        }
+        .folder-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08);
+            border-color: #c7d2fe;
+        }
+        .folder-card:hover::before {
+            width: 10px;
+        }
+        .folder-icon-wrapper {
+            width: 58px;
+            height: 58px;
+            border-radius: 16px;
+            background: #eef2ff;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            transition: all 0.3s ease;
+        }
+        .folder-card:hover .folder-icon-wrapper {
+            background: #4f46e5;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        /* CARD FILE TỪ VỰNG */
+        .file-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            background: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .file-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px -5px rgba(0, 0, 0, 0.1);
+            border-color: #cbd5e1;
+        }
+        .file-icon-wrapper {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: #f1f5f9;
+            color: #0284c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        /* BREADCRUMB */
+        .breadcrumb-item a {
+            text-decoration: none;
+            color: #64748b;
+            font-weight: 600;
+        }
+        .breadcrumb-item.active {
+            color: #4f46e5;
+            font-weight: 700;
+        }
+
+        .badge-count {
+            background-color: #eef2ff;
+            color: #4338ca;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+        .badge-words {
+            background-color: #ecfdf5;
+            color: #059669;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="header-container"></div>
+
+<div class="container py-4">
+
+    <!-- HERO SECTION -->
+    <div class="hero-section text-center">
+        <h1 class="fw-bold display-5 mb-3">Luyện Tập Tiếng Anh Mỗi Ngày</h1>
+        <p class="fs-5 opacity-90 mb-0">Học theo thư mục chủ đề khoa học, bài bản và lưu nhớ từ vựng dễ dàng!</p>
+    </div>
+
+    <!-- KHU VỰC ĐIỀU HƯỚNG BREADCRUMB (KHI MỞ FOLDER) -->
+    <div id="breadcrumb-bar" class="d-none mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-white p-3 rounded-4 shadow-sm border align-items-center mb-0">
+                <li class="breadcrumb-item">
+                    <a href="javascript:void(0)" onclick="backToFolders()"><i class="bi bi-folder me-1"></i> Tất Cả Chủ Đề</a>
+                </li>
+                <li class="breadcrumb-item active" id="current-folder-breadcrumb">Tên Chủ Đề</li>
+            </ol>
+        </nav>
+    </div>
+
+    <!-- TIÊU ĐỀ & THANH CÔNG CỤ -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold text-dark mb-1" id="section-title">
+                <i class="bi bi-folder-fill me-2 text-primary"></i>Thư Mục Chủ Đề
+            </h3>
+            <p class="text-muted mb-0" id="section-subtitle">
+                Chọn một chủ đề lớn để xem các file bài học từ vựng chi tiết
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <button id="btn-back-folder" class="btn btn-outline-secondary rounded-pill px-3 d-none" onclick="backToFolders()">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại Thư Mục
+            </button>
+            <div class="input-group" style="width: 260px;">
+                <span class="input-group-text bg-white border-end-0 rounded-start-pill text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" id="search-input" class="form-control border-start-0 rounded-end-pill" placeholder="Tìm kiếm nhanh..." oninput="handleSearch()">
+            </div>
+        </div>
+    </div>
+
+    <!-- VIEW 1: DANH SÁCH THƯ MỤC CHỦ ĐỀ -->
+    <div class="row g-4" id="folder-list">
+        <div class="col-12 text-center py-5 text-muted">
+            <div class="spinner-border text-primary me-2" role="status"></div>
+            <span>Đang tải danh sách thư mục chủ đề...</span>
+        </div>
+    </div>
+
+    <!-- VIEW 2: DANH SÁCH FILE TỪ VỰNG TRONG THƯ MỤC (ẨN BAN ĐẦU) -->
+    <div class="row g-4 d-none" id="file-list"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/layout.js"></script>
+<script>
+    let allFolders = [];
+    let currentFolderId = null;
+    let currentFiles = [];
+
+    document.addEventListener("DOMContentLoaded", () => {
+        // Kiểm tra URL xem có truyền folderId không
+        const urlParams = new URLSearchParams(window.location.search);
+        const fId = urlParams.get('folderId');
+        if (fId) {
+            loadFolders().then(() => {
+                const found = allFolders.find(f => f.id == fId);
+                if (found) {
+                    openFolder(found.id, found.name, found.description);
+                } else {
+                    renderFolders();
+                }
+            });
+        } else {
+            loadFolders();
+        }
+    });
+
+    // 1. TẢI DANH SÁCH THƯ MỤC CHỦ ĐỀ
+    async function loadFolders() {
+        try {
+            const res = await fetch('/api/folders');
+            if (!res.ok) throw new Error("Không thể tải danh sách thư mục chủ đề");
+            allFolders = await res.json();
+            renderFolders();
+        } catch (err) {
+            console.error(err);
+            document.getElementById('folder-list').innerHTML = `
+                <div class="col-12 text-center py-5 text-danger">
+                    <i class="bi bi-exclamation-triangle fs-2 d-block mb-2"></i>
+                    <strong>${err.message}</strong>
+                </div>
+            `;
+        }
+    }
+
+    // 2. HIỂN THỊ DANH SÁCH THƯ MỤC
+    function renderFolders(filteredList = null) {
+        const folders = filteredList || allFolders;
+        const listEl = document.getElementById('folder-list');
+
+        if (!folders || folders.length === 0) {
+            listEl.innerHTML = `
+                <div class="col-12 text-center py-5 text-muted">
+                    <i class="bi bi-folder-x fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                    Chưa có thư mục chủ đề nào được tạo.
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        folders.forEach(f => {
+            const fileCount = f.fileCount || 0;
+            const fileBadgeText = fileCount === 1 ? '1 file từ vựng' : `${fileCount} file từ vựng`;
+            const color = f.color || '#4f46e5';
+
+            html += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card folder-card h-100 p-4" onclick="openFolder(${f.id}, '${escapeJs(f.name)}', '${escapeJs(f.description || '')}')">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="folder-icon-wrapper" style="color: ${color};">
+                                <i class="bi bi-folder-fill"></i>
+                            </div>
+                            <span class="badge-count">
+                                <i class="bi bi-file-earmark-text me-1"></i>${fileBadgeText}
+                            </span>
+                        </div>
+                        <h4 class="fw-bold text-dark mb-2">${f.name}</h4>
+                        <p class="text-muted small mb-4 flex-grow-1">${f.description || 'Chưa có mô tả cho chủ đề này'}</p>
+                        <div class="d-flex align-items-center justify-content-between pt-2 border-top">
+                            <span class="text-primary fw-semibold small">Mở thư mục học</span>
+                            <i class="bi bi-arrow-right-circle-fill fs-5 text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        listEl.innerHTML = html;
+    }
+
+    // 3. MỞ THƯ MỤC -> HIỂN THỊ DANH SÁCH FILE TỪ VỰNG
+    async function openFolder(folderId, folderName, folderDesc) {
+        currentFolderId = folderId;
+
+        // Cập nhật URL trình duyệt (không reload trang)
+        const newUrl = window.location.pathname + `?folderId=${folderId}`;
+        window.history.pushState({ folderId: folderId }, '', newUrl);
+
+        // Đổi trạng thái giao diện sang Xem File
+        document.getElementById('folder-list').classList.add('d-none');
+        document.getElementById('file-list').classList.remove('d-none');
+        document.getElementById('breadcrumb-bar').classList.remove('d-none');
+        document.getElementById('btn-back-folder').classList.remove('d-none');
+
+        document.getElementById('current-folder-breadcrumb').textContent = folderName;
+        document.getElementById('section-title').innerHTML = `<i class="bi bi-folder2-open me-2 text-primary"></i>${folderName}`;
+        document.getElementById('section-subtitle').textContent = folderDesc || "Danh sách các file bài học từ vựng trong chủ đề này";
+
+        const fileContainer = document.getElementById('file-list');
+        fileContainer.innerHTML = `
+            <div class="col-12 text-center py-5 text-muted">
+                <div class="spinner-border text-primary me-2" role="status"></div>
+                <span>Đang tải các file từ vựng trong chủ đề...</span>
+            </div>
+        `;
+
+        try {
+            const res = await fetch(`/api/topics?folderId=${folderId}`);
+            if (!res.ok) throw new Error("Không thể tải danh sách file từ vựng");
+            currentFiles = await res.json();
+            renderFiles();
+        } catch (err) {
+            fileContainer.innerHTML = `
+                <div class="col-12 text-center py-5 text-danger">
+                    <i class="bi bi-exclamation-triangle fs-2 d-block mb-2"></i>
+                    <strong>${err.message}</strong>
+                </div>
+            `;
+        }
+    }
+
+    // 4. HIỂN THỊ CÁC FILE TỪ VỰNG TRONG FOLDER
+    function renderFiles(filteredList = null) {
+        const files = filteredList || currentFiles;
+        const fileContainer = document.getElementById('file-list');
+
+        if (!files || files.length === 0) {
+            fileContainer.innerHTML = `
+                <div class="col-12 text-center py-5 text-muted bg-white rounded-4 border p-5">
+                    <i class="bi bi-file-earmark-x fs-1 d-block mb-3 text-secondary opacity-50"></i>
+                    <h5 class="fw-bold text-dark mb-1">Chưa có file từ vựng nào trong chủ đề này</h5>
+                    <p class="small text-muted mb-4">Các file học từ vựng được tạo hoặc nhập từ Excel sẽ xuất hiện tại đây.</p>
+                    <button class="btn btn-primary rounded-pill px-4" onclick="backToFolders()">
+                        <i class="bi bi-arrow-left me-1"></i> Quay lại chọn chủ đề khác
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        files.forEach(f => {
+            const vocabCount = f.vocabCount || 0;
+            const vocabText = `${vocabCount} từ vựng`;
+
+            html += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="card file-card h-100 p-4">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="file-icon-wrapper">
+                                <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                            </div>
+                            <span class="badge-words">
+                                <i class="bi bi-spellcheck me-1"></i>${vocabText}
+                            </span>
+                        </div>
+                        <h5 class="fw-bold text-dark mb-2">${f.title}</h5>
+                        <p class="text-muted small mb-4 flex-grow-1">${f.description || 'File học từ vựng'}</p>
+                        <div class="d-flex gap-2">
+                            <a href="/flashcard.html?topicId=${f.id}" class="btn btn-warning flex-fill fw-semibold rounded-3 text-dark btn-sm py-2" title="Học thẻ Flashcard">
+                                <i class="bi bi-layers-fill me-1"></i> Flashcard
+                            </a>
+                            <a href="/vocabulary.html?topicId=${f.id}" class="btn btn-primary flex-fill fw-semibold rounded-3 btn-sm py-2" title="Xem danh sách từ vựng">
+                                <i class="bi bi-book me-1"></i> Từ Vựng
+                            </a>
+                            <a href="/quiz.html?topicId=${f.id}" class="btn btn-outline-success flex-fill fw-semibold rounded-3 btn-sm py-2" title="Làm bài tập trắc nghiệm">
+                                <i class="bi bi-controller me-1"></i> Bài Tập
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        fileContainer.innerHTML = html;
+    }
+
+    // 5. QUAY LẠI DANH SÁCH THƯ MỤC
+    function backToFolders() {
+        currentFolderId = null;
+        currentFiles = [];
+
+        // Xóa query folderId khỏi URL
+        window.history.pushState({}, '', window.location.pathname);
+
+        document.getElementById('file-list').classList.add('d-none');
+        document.getElementById('folder-list').classList.remove('d-none');
+        document.getElementById('breadcrumb-bar').classList.add('d-none');
+        document.getElementById('btn-back-folder').classList.add('d-none');
+
+        document.getElementById('section-title').innerHTML = `<i class="bi bi-folder-fill me-2 text-primary"></i>Thư Mục Chủ Đề`;
+        document.getElementById('section-subtitle').textContent = "Chọn một chủ đề lớn để xem các file bài học từ vựng chi tiết";
+
+        document.getElementById('search-input').value = '';
+        renderFolders();
+    }
+
+    // 6. XỬ LÝ TÌM KIẾM
+    function handleSearch() {
+        const keyword = document.getElementById('search-input').value.toLowerCase().trim();
+        if (currentFolderId) {
+            // Đang ở trong folder -> tìm kiếm file
+            const filtered = currentFiles.filter(f =>
+                (f.title && f.title.toLowerCase().includes(keyword)) ||
+                (f.description && f.description.toLowerCase().includes(keyword))
+            );
+            renderFiles(filtered);
+        } else {
+            // Đang ở ngoài -> tìm kiếm folder
+            const filtered = allFolders.filter(f =>
+                (f.name && f.name.toLowerCase().includes(keyword)) ||
+                (f.description && f.description.toLowerCase().includes(keyword))
+            );
+            renderFolders(filtered);
+        }
+    }
+
+    // Hỗ trợ browser back/forward
+    window.addEventListener('popstate', (e) => {
+        if (e.state && e.state.folderId) {
+            const found = allFolders.find(f => f.id == e.state.folderId);
+            if (found) openFolder(found.id, found.name, found.description);
+        } else {
+            backToFolders();
+        }
+    });
+
+    function escapeJs(str) {
+        return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+</script>
+</body>
+</html>

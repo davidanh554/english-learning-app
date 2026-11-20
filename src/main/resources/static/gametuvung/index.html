@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Center - EnglishPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+        }
+        .word-card {
+            height: 105px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.05rem;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.2s ease-in-out;
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.06);
+            border: 2px solid #e9ecef;
+            background-color: #fff;
+            padding: 10px;
+        }
+        .word-card:hover {
+            transform: translateY(-3px);
+            border-color: #0d6efd;
+        }
+        .word-card.selected {
+            background-color: #cfe2ff;
+            border-color: #0d6efd;
+            color: #084298;
+        }
+        .word-card.matched {
+            visibility: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: visibility 0s 0.2s, opacity 0.2s linear;
+        }
+        .word-card.wrong {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            animation: shake 0.3s;
+        }
+        .letter-btn {
+            width: 45px;
+            height: 45px;
+            font-size: 1.25rem;
+            font-weight: bold;
+            border-radius: 10px;
+            margin: 4px;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+<!-- Header nạp từ layout.js -->
+<div id="header-container"></div>
+
+<div class="container my-4" style="max-width: 800px;">
+    <!-- Thanh chọn chế độ chơi -->
+    <ul class="nav nav-pills nav-fill bg-white p-2 rounded-4 shadow-sm mb-4 border">
+        <li class="nav-item">
+            <button class="nav-link active fw-bold py-2" id="tab-match" onclick="switchGameMode('match')">
+                <i class="bi bi-grid-fill me-1"></i> Ghép Thẻ Nhanh
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link fw-bold py-2 text-dark" id="tab-scramble" onclick="switchGameMode('scramble')">
+                <i class="bi bi-sort-alpha-down me-1"></i> Xếp Chữ Cái
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link fw-bold py-2 text-dark" id="tab-listen" onclick="switchGameMode('listen')">
+                <i class="bi bi-volume-up-fill me-1"></i> Nghe Chép Từ
+            </button>
+        </li>
+    </ul>
+
+    <!-- KHU VỰC 1: GAME GHÉP THẺ NHANH -->
+    <div id="mode-match" class="game-container">
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-body d-flex justify-content-between align-items-center py-3">
+                <div class="d-flex gap-4">
+                    <span class="fs-5 fw-bold text-primary"><i class="bi bi-stopwatch me-1"></i><span id="timer">0.0s</span></span>
+                    <span class="fs-5 fw-bold text-success"><i class="bi bi-check-circle me-1"></i><span id="matched-count">0</span>/<span id="total-count">0</span></span>
+                </div>
+                <button class="btn btn-outline-primary fw-semibold rounded-pill px-3" onclick="startMatchGame()">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Chơi lại
+                </button>
+            </div>
+        </div>
+        <div class="game-grid" id="game-board"></div>
+        <div id="win-banner" class="alert alert-success text-center shadow-lg mt-4 py-4 rounded-4 d-none">
+            <h3 class="fw-bold text-success mb-2">🎉 Hoàn thành xuất sắc!</h3>
+            <p class="fs-5 mb-3">Bạn đã ghép xong trong <b id="final-time"></b>!</p>
+            <button class="btn btn-success fw-bold px-4 py-2 rounded-pill" onclick="startMatchGame()">Chơi ván mới</button>
+        </div>
+    </div>
+
+    <!-- KHU VỰC 2: GAME XẾP CHỮ CÁI (WORD SCRAMBLE) -->
+    <div id="mode-scramble" class="game-container d-none">
+        <div class="card shadow-sm border-0 p-4 text-center">
+            <div class="d-flex justify-content-between text-muted mb-3">
+                <span class="fw-semibold">Câu hỏi: <span id="scramble-index">1</span>/<span id="scramble-total">5</span></span>
+                <span class="fw-bold text-primary">Điểm: <span id="scramble-score">0</span></span>
+            </div>
+            <h5 class="text-muted mb-1">Nghĩa tiếng Việt:</h5>
+            <h3 class="fw-bold text-dark mb-2" id="scramble-meaning">--</h3>
+            <div class="text-primary mb-4" id="scramble-phienam" style="font-size: 1.1rem;">--</div>
+
+            <!-- Các ô chữ đã chọn -->
+            <div class="d-flex justify-content-center mb-4 min-vh-10" id="scramble-answer" style="min-height: 50px;"></div>
+
+            <!-- Các ký tự bị xáo trộn -->
+            <div class="d-flex justify-content-center flex-wrap mb-4" id="scramble-letters"></div>
+
+            <div>
+                <button class="btn btn-light rounded-pill px-4 me-2" onclick="resetCurrentScramble()"><i class="bi bi-eraser me-1"></i> Xóa làm lại</button>
+                <button class="btn btn-primary rounded-pill px-4 fw-semibold" onclick="nextScrambleQuestion()"><i class="bi bi-arrow-right-circle me-1"></i> Câu tiếp</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KHU VỰC 3: GAME NGHE CHÉP TỪ (LISTENING CHALLENGE) -->
+    <div id="mode-listen" class="game-container d-none">
+        <div class="card shadow-sm border-0 p-4 text-center">
+            <div class="d-flex justify-content-between text-muted mb-3">
+                <span class="fw-semibold">Câu: <span id="listen-index">1</span>/<span id="listen-total">5</span></span>
+                <span class="fw-bold text-success">Điểm: <span id="listen-score">0</span></span>
+            </div>
+
+            <div class="my-3">
+                <button class="btn btn-outline-primary btn-lg rounded-circle p-4 shadow-sm" onclick="playCurrentListenAudio()">
+                    <i class="bi bi-volume-up-fill fs-1"></i>
+                </button>
+                <p class="text-muted mt-2">Bấm loa để nghe phát âm</p>
+            </div>
+
+            <div class="text-secondary mb-3 fs-5" id="listen-hint">Gợi ý nghĩa: --</div>
+
+            <div class="row justify-content-center mb-3">
+                <div class="col-md-8">
+                    <input type="text" id="listen-input" class="form-control form-control-lg text-center fw-bold" placeholder="Gõ từ bạn vừa nghe..." autocomplete="off" onkeydown="if(event.key==='Enter') checkListeningAnswer()">
+                </div>
+            </div>
+
+            <div id="listen-feedback" class="fw-bold mb-3" style="min-height: 24px;"></div>
+
+            <div>
+                <button class="btn btn-primary rounded-pill px-4 py-2 fw-semibold" onclick="checkListeningAnswer()">
+                    <i class="bi bi-check-lg me-1"></i> Kiểm tra
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/layout.js"></script>
+<script src="game.js?v=4"></script>
+</body>
+</html>

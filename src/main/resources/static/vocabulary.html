@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh Sách Từ Vựng - EnglishPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+        .vocab-card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: all 0.2s ease-in-out;
+            height: 100%;
+        }
+        .vocab-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        .badge-type {
+            background-color: #e0e7ff;
+            color: #4338ca;
+            font-weight: 700;
+        }
+        .info-tag {
+            background: #f1f5f9;
+            border-left: 3px solid #3b82f6;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.88rem;
+        }
+    </style>
+</head>
+<body>
+
+<div id="header-container"></div>
+
+<div class="container py-5">
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a id="btn-back-home" href="/" class="btn btn-outline-secondary rounded-pill btn-sm mb-2"><i class="bi bi-arrow-left"></i> Quay lại thư mục</a>
+            <h2 class="fw-bold text-primary mb-0" id="vocab-title">Danh Sách Từ Vựng</h2>
+            <p class="text-muted small mb-0" id="vocab-subtitle">File bài học từ vựng</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a id="btn-quiz" href="#" class="btn btn-outline-success rounded-pill px-3 fw-bold">
+                <i class="bi bi-controller me-1"></i> Bài Tập
+            </a>
+            <a id="btn-flashcard" href="#" class="btn btn-primary rounded-pill px-4 fw-bold">
+                <i class="bi bi-card-heading me-1"></i> Học Flashcard
+            </a>
+        </div>
+    </div>
+
+    <!-- DANH SÁCH THẺ TỪ VỰNG -->
+    <div class="row g-4" id="vocab-grid"></div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const topicId = urlParams.get('topicId') || 1;
+
+    // Kiểm tra thông tin User đăng nhập
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const isAdmin = currentUser && currentUser.role === 'ADMIN';
+
+    // Cập nhật link các nút chuyển
+    document.getElementById('btn-flashcard').href = `/flashcard.html?topicId=${topicId}`;
+    document.getElementById('btn-quiz').href = `/quiz.html?topicId=${topicId}`;
+
+    // Tải thông tin File từ vựng và Thư mục cha
+    fetch(`/api/topics/${topicId}`)
+        .then(res => res.json())
+        .then(t => {
+            if (t.title) {
+                document.getElementById('vocab-title').innerHTML = `<i class="bi bi-file-earmark-spreadsheet me-2 text-primary"></i>${t.title}`;
+            }
+            if (t.folderName) {
+                document.getElementById('vocab-subtitle').innerHTML = `<i class="bi bi-folder-fill me-1 text-warning"></i> Thư mục: <strong>${t.folderName}</strong>`;
+            }
+            if (t.folderId) {
+                document.getElementById('btn-back-home').href = `/?folderId=${t.folderId}`;
+            }
+        })
+        .catch(console.error);
+
+    // Tải danh sách từ vựng
+    function loadVocabularies() {
+        fetch(`/api/vocabularies/topic/${topicId}`)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('vocab-grid');
+                container.innerHTML = '';
+
+                if (data.length === 0) {
+                    container.innerHTML = `<div class="col-12 text-center py-5 text-muted">Chưa có từ vựng nào trong chủ đề này!</div>`;
+                    return;
+                }
+
+                data.forEach(item => {
+                    const cardHtml = `
+                        <div class="col-md-6 col-lg-4" id="card-${item.id}">
+                            <div class="card vocab-card p-4 position-relative">
+
+                                <!-- TỪ VỰNG & LOẠI TỪ & NÚT XÓA ADMIN -->
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h3 class="fw-bold text-dark mb-0">${item.word}</h3>
+                                        <span class="text-muted small">${item.phienAm || ''}</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge badge-type rounded-pill px-3 py-2">${item.loaiTu || 'Vocabulary'}</span>
+                                        ${isAdmin ? `
+                                            <button class="btn btn-sm btn-outline-danger border-0 rounded-circle" title="Xóa từ vựng này" onclick="deleteVocab(${item.id}, '${item.word}')">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+
+                                <!-- NÚT PHÁT ÂM US / UK -->
+                                <div class="d-flex gap-2 my-2">
+                                    <button class="btn btn-sm btn-light text-danger fw-semibold border" onclick="playAudio('${item.audioUs}', '${item.word}', 'en-US')">
+                                        🇺🇸 US
+                                    </button>
+                                    <button class="btn btn-sm btn-light text-primary fw-semibold border" onclick="playAudio('${item.audioUk}', '${item.word}', 'en-GB')">
+                                        🇬🇧 UK
+                                    </button>
+                                </div>
+
+                                <hr class="my-3 opacity-25">
+
+                                <!-- NGHĨA TIẾNG VIỆT -->
+                                <div class="mb-3">
+                                    <span class="fw-bold text-secondary small">Nghĩa:</span>
+                                    <div class="fw-bold text-dark fs-5">${item.meaning || 'N/A'}</div>
+                                </div>
+
+                                <!-- BIẾN THỂ TỪ (WORD FORMS) -->
+                                ${item.wordForms ? `
+                                    <div class="info-tag mb-2">
+                                        <strong class="text-primary"><i class="bi bi-diagram-3 me-1"></i> Biến thể:</strong> ${item.wordForms}
+                                    </div>
+                                ` : ''}
+
+                                <!-- PARAPHRASE -->
+                                ${item.paraphrase ? `
+                                    <div class="info-tag mb-2" style="border-left-color: #06b6d4;">
+                                        <strong class="text-info"><i class="bi bi-arrow-left-right me-1"></i> Paraphrase:</strong> ${item.paraphrase}
+                                    </div>
+                                ` : ''}
+
+                                <!-- COLLOCATION & VÍ DỤ -->
+                                ${(item.collocationExample || item.example) ? `
+                                    <div class="info-tag" style="border-left-color: #10b981;">
+                                        <strong class="text-success"><i class="bi bi-quote me-1"></i> Cụm từ & Ví dụ:</strong>
+                                        <div class="fst-italic mt-1">${item.collocationExample || item.example}</div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += cardHtml;
+                });
+            });
+    }
+
+    loadVocabularies();
+
+    // HÀM XÓA TỪ VỰNG DÀNH CHO ADMIN
+    function deleteVocab(id, word) {
+        if (confirm(`Bạn có chắc chắn muốn xóa từ vựng "${word}" khỏi hệ thống?`)) {
+            fetch(`/api/vocabularies/${id}`, {
+                method: 'DELETE'
+            })
+            .then(res => {
+                if (res.ok) {
+                    // Xóa thẻ tương ứng trên giao diện ngay lập tức
+                    const card = document.getElementById(`card-${id}`);
+                    if (card) card.remove();
+                } else {
+                    alert("Lỗi! Không thể xóa từ vựng này.");
+                }
+            })
+            .catch(() => alert("Lỗi kết nối máy chủ!"));
+        }
+    }
+
+    function playAudio(audioUrl, word, lang) {
+        if (audioUrl && audioUrl !== 'null' && audioUrl.trim() !== '') {
+            const audio = new Audio(audioUrl);
+            audio.play().catch(() => playSpeechFallback(word, lang));
+        } else {
+            playSpeechFallback(word, lang);
+        }
+    }
+
+    function playSpeechFallback(word, lang) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(word);
+            utterance.lang = lang;
+            utterance.rate = 0.85;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+</script>
+
+<script src="/js/layout.js"></script>
+</body>
+</html>
