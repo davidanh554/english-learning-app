@@ -101,7 +101,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/vocabularies/**").permitAll()
                         .requestMatchers("/api/quiz/**").permitAll()
                         .requestMatchers("/api/ai/**").permitAll()
-                        .requestMatchers("/api/user-progress/**").permitAll()
+                        .requestMatchers("/api/progress/**", "/api/user-progress/**").permitAll()
 
                         // 4. API quản trị yêu cầu quyền ADMIN
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
