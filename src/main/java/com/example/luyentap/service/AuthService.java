@@ -45,7 +45,10 @@ public class AuthService {
         user.setEmail(dto.getEmail());
         // Mã hóa mật khẩu mới bằng PasswordEncoder (BCrypt)
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
-        String role = dto.getRole() != null ? dto.getRole() : "STUDENT";
+        
+        // BẢO MẬT HỆ THỐNG: Mọi tài khoản đăng ký từ bên ngoài mặc định luôn là STUDENT!
+        // Ngăn chặn lỗ hổng Privilege Escalation (Leo thang đặc quyền)
+        String role = "STUDENT";
         user.setRole(role);
 
         User saved = userRepository.save(user);
