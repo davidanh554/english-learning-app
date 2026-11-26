@@ -102,6 +102,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/quiz/**").permitAll()
                         .requestMatchers("/api/ai/**").permitAll()
                         .requestMatchers("/api/progress/**", "/api/user-progress/**").permitAll()
+                        .requestMatchers("/api/products/**").permitAll()
+                        .requestMatchers("/api/cart/**").permitAll()
 
                         // 4. API quản trị yêu cầu quyền ADMIN
                         .requestMatchers("/api/users/**").hasRole("ADMIN")

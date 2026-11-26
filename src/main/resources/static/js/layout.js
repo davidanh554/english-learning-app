@@ -102,12 +102,32 @@ function renderHeader() {
                                 <i class="bi bi-controller me-1"></i>Game Từ Vựng
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-semibold text-warning" href="/shop.html">
+                                <i class="bi bi-bag-check-fill me-1"></i>Cửa Hàng
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-semibold text-dark position-relative" href="/cart.html">
+                                <i class="bi bi-cart3 me-1"></i>Giỏ Hàng
+                                <span class="badge bg-danger rounded-pill ms-1" id="nav-cart-badge">0</span>
+                            </a>
+                        </li>
                     </ul>
                     <div>${authAreaHtml}</div>
                 </div>
             </div>
         </nav>
     `;
+
+    // Tự động đồng bộ số lượng giỏ hàng trên Navbar
+    fetch('/api/cart')
+        .then(r => r.json())
+        .then(cart => {
+            const badge = document.getElementById('nav-cart-badge');
+            if (badge) badge.innerText = cart.totalQuantity || 0;
+        })
+        .catch(() => {});
 }
 
 if (document.readyState === 'loading') {

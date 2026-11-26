@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chi Tiết Sản Phẩm - EnglishPro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+        .product-img-box {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+        }
+        .main-product-img {
+            width: 100%;
+            height: 440px;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        .product-img-box:hover .main-product-img {
+            transform: scale(1.03);
+        }
+        .badge-category {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .price-display {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #059669;
+        }
+        .qty-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            transition: all 0.2s;
+        }
+        .qty-btn:hover {
+            background-color: #f1f5f9;
+            border-color: #94a3b8;
+        }
+        .qty-input {
+            width: 60px;
+            height: 44px;
+            text-align: center;
+            font-weight: 700;
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            font-size: 1.1rem;
+        }
+        .policy-card {
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
+        }
+        /* Toast notification */
+        #cart-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9999;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        #cart-toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div id="header-container"></div>
+
+<!-- Toast thông báo thêm giỏ hàng thành công -->
+<div id="cart-toast" class="alert alert-success shadow-lg rounded-4 d-flex align-items-center gap-3 py-3 px-4 border-0">
+    <i class="bi bi-check-circle-fill fs-3 text-success"></i>
+    <div>
+        <div class="fw-bold" id="toast-title">Đã thêm vào giỏ hàng!</div>
+        <small class="text-muted" id="toast-desc">Sản phẩm đã được cập nhật vào giỏ.</small>
+    </div>
+    <a href="/cart.html" class="btn btn-sm btn-success rounded-pill px-3 fw-bold ms-2">Xem Giỏ Hàng</a>
+</div>
+
+<div class="container py-4">
+
+    <!-- BREADCRUMB -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb bg-white p-3 rounded-4 shadow-sm border align-items-center mb-0">
+            <li class="breadcrumb-item">
+                <a href="/" class="text-decoration-none text-muted fw-semibold">
+                    <i class="bi bi-house-door me-1"></i>Trang Chủ
+                </a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="/shop.html" class="text-decoration-none text-muted fw-semibold">
+                    <i class="bi bi-shop me-1"></i>Cửa Hàng
+                </a>
+            </li>
+            <li class="breadcrumb-item active fw-bold text-primary" id="breadcrumb-product-name">
+                Chi tiết sản phẩm
+            </li>
+        </ol>
+    </nav>
+
+    <!-- LOADING SPINNER -->
+    <div id="loading-state" class="text-center py-5">
+        <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+        <p class="mt-3 text-muted fw-semibold">Đang tải thông tin sản phẩm...</p>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div id="error-state" class="d-none text-center py-5">
+        <div class="alert alert-danger d-inline-block rounded-4 p-4 shadow-sm">
+            <i class="bi bi-exclamation-triangle-fill fs-1 text-danger d-block mb-3"></i>
+            <h4 class="fw-bold text-danger mb-2">Không tìm thấy sản phẩm!</h4>
+            <p class="text-muted mb-4" id="error-message">Sản phẩm này có thể đã ngừng kinh doanh hoặc đường dẫn không hợp lệ.</p>
+            <a href="/shop.html" class="btn btn-primary rounded-pill px-4 fw-bold">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại Cửa Hàng
+            </a>
+        </div>
+    </div>
+
+    <!-- MAIN PRODUCT CONTENT -->
+    <div id="product-content" class="d-none">
+        <div class="row g-5">
+            <!-- CỘT ẢNH SẢN PHẨM -->
+            <div class="col-lg-6">
+                <div class="product-img-box sticky-top" style="top: 90px;">
+                    <span class="badge-category" id="product-badge-cat">Học liệu</span>
+                    <img id="product-img" src="" alt="Sản phẩm" class="main-product-img" onerror="this.src='https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop&q=80'">
+                    
+                    <div class="p-4 bg-white border-top">
+                        <div class="row g-3">
+                            <div class="col-sm-4 text-center">
+                                <div class="policy-card h-100">
+                                    <i class="bi bi-truck text-primary fs-3 mb-2 d-block"></i>
+                                    <span class="fw-bold small d-block" id="policy-shipping-title">Giao Toàn Quốc</span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">Nhận hàng sau 2-3 ngày</small>
+                                </div>
+                            </div>
+                            <div class="col-sm-4 text-center">
+                                <div class="policy-card h-100">
+                                    <i class="bi bi-shield-check text-success fs-3 mb-2 d-block"></i>
+                                    <span class="fw-bold small d-block">Chính Hãng 100%</span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">Bảo hành & đổi trả 7 ngày</small>
+                                </div>
+                            </div>
+                            <div class="col-sm-4 text-center">
+                                <div class="policy-card h-100">
+                                    <i class="bi bi-headset text-warning fs-3 mb-2 d-block"></i>
+                                    <span class="fw-bold small d-block">Hỗ Trợ 24/7</span>
+                                    <small class="text-muted" style="font-size: 0.75rem;">Kèm tài liệu học trực tuyến</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CỘT THÔNG TIN VÀ HÀNH ĐỘNG -->
+            <div class="col-lg-6">
+                <div class="bg-white p-4 p-md-5 rounded-4 shadow-sm border">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-2 rounded-pill" id="product-type-badge">
+                            <i class="bi bi-box-seam me-1"></i>Hàng vật lý
+                        </span>
+                        <span class="badge bg-success-subtle text-success fw-bold px-3 py-2 rounded-pill" id="product-stock-badge">
+                            <i class="bi bi-check-circle-fill me-1"></i>Còn hàng (50 sản phẩm)
+                        </span>
+                    </div>
+
+                    <h1 class="fw-bold text-dark mb-3 mt-2" id="product-name" style="font-size: 1.85rem; line-height: 1.3;">
+                        Tên sản phẩm
+                    </h1>
+
+                    <div class="d-flex align-items-baseline gap-3 mb-3 pb-3 border-bottom">
+                        <div class="price-display" id="product-price">0 ₫</div>
+                        <span class="badge bg-danger-subtle text-danger fw-bold rounded-pill px-3 py-1">Giá ưu đãi</span>
+                    </div>
+
+                    <p class="text-muted mb-4 fs-6" id="product-desc" style="line-height: 1.6;">
+                        Mô tả chi tiết sản phẩm...
+                    </p>
+
+                    <!-- CHỌN SỐ LƯỢNG -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-dark mb-2">
+                            <i class="bi bi-calculator me-1"></i>Chọn số lượng:
+                        </label>
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="qty-btn" type="button" onclick="changeQty(-1)" title="Giảm số lượng">
+                                <i class="bi bi-dash"></i>
+                            </button>
+                            <input type="number" id="buy-quantity" class="qty-input" value="1" min="1" max="999" onchange="validateQty()">
+                            <button class="qty-btn" type="button" onclick="changeQty(1)" title="Tăng số lượng">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                            <span class="text-muted small ms-2" id="stock-hint">Tối đa trong kho: 50</span>
+                        </div>
+                    </div>
+
+                    <!-- HAI NÚT BẤM CHÍNH: THÊM VÀO GIỎ HÀNG & MUA NGAY -->
+                    <div class="d-flex flex-column flex-sm-row gap-3 pt-2 mb-4">
+                        <button class="btn btn-outline-primary btn-lg rounded-pill fw-bold px-4 py-3 flex-fill d-flex align-items-center justify-content-center gap-2 shadow-sm" onclick="addToCartDetail()">
+                            <i class="bi bi-cart-plus-fill fs-5"></i>
+                            <span>Thêm Vào Giỏ Hàng</span>
+                        </button>
+                        <button class="btn btn-warning btn-lg rounded-pill fw-bold px-4 py-3 flex-fill d-flex align-items-center justify-content-center gap-2 shadow text-dark" onclick="buyNowDetail()">
+                            <i class="bi bi-lightning-charge-fill fs-5"></i>
+                            <span>Mua Ngay</span>
+                        </button>
+                    </div>
+
+                    <!-- CAM KẾT SẢN PHẨM -->
+                    <div class="p-3 rounded-3 bg-light border">
+                        <div class="d-flex align-items-center gap-2 text-dark fw-bold mb-2">
+                            <i class="bi bi-award-fill text-warning fs-5"></i>
+                            <span>Cam kết từ Nền Tảng Học Tiếng Anh EnglishPro</span>
+                        </div>
+                        <ul class="text-muted small mb-0 ps-3">
+                            <li class="mb-1">Tích hợp đồng bộ phương pháp ghi nhớ ngắt quãng SM-2 trên hệ thống web.</li>
+                            <li class="mb-1">Giao hàng đóng gói cẩn thận 3 lớp, chống nước tuyệt đối đối với Flashcard giấy.</li>
+                            <li>Kích hoạt tức thì vào tài khoản học viên đối với các Gói VIP và Token AI.</li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top">
+                        <a href="/shop.html" class="text-decoration-none text-muted fw-semibold small d-inline-flex align-items-center">
+                            <i class="bi bi-arrow-left me-1"></i> Tiếp tục xem sản phẩm khác trong Cửa Hàng
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PHẦN MÔ TẢ CHI TIẾT & HƯỚNG DẪN HỌC BÊN DƯỚI -->
+        <div class="card border-0 shadow-sm rounded-4 mt-5 p-4 p-md-5">
+            <h4 class="fw-bold text-dark mb-4">
+                <i class="bi bi-info-circle-fill text-primary me-2"></i>Thông Tin & Lợi Ích Học Tập
+            </h4>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="p-4 rounded-3 border bg-light h-100">
+                        <h5 class="fw-bold text-primary mb-3">
+                            <i class="bi bi-check2-circle me-1"></i>Ứng Dụng Trong Học Tập
+                        </h5>
+                        <p class="text-muted small mb-2">
+                            Sản phẩm này được thiết kế để bổ trợ toàn diện cho các bài học từ vựng trực tuyến trên hệ thống EnglishPro:
+                        </p>
+                        <ul class="text-muted small ps-3 mb-0">
+                            <li class="mb-2"><strong>Bộ Thẻ Flashcard Giấy:</strong> Giúp học mọi lúc mọi nơi không phụ thuộc màn hình điện thoại, in song ngữ kèm phiên âm IPA chuẩn Oxford.</li>
+                            <li class="mb-2"><strong>Gói Nâng Cấp VIP PRO:</strong> Mở khóa quyền làm bài tập trắc nghiệm không giới hạn, phân tích lỗi ngữ pháp bằng trí tuệ nhân tạo Gemini 2.5 Flash Lite siêu tốc.</li>
+                            <li><strong>AI Credits:</strong> Tương tác giọng nói và hội thoại 1-1 chuyên sâu theo các chủ đề IELTS / TOEIC thực tế.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-4 rounded-3 border bg-light h-100">
+                        <h5 class="fw-bold text-success mb-3">
+                            <i class="bi bi-patch-check-fill me-1"></i>Quy Trình Xử Lý Đơn Hàng (Lab 04 & 05)
+                        </h5>
+                        <ul class="text-muted small ps-3 mb-0">
+                            <li class="mb-2"><strong>Bước 1:</strong> Thêm sản phẩm vào giỏ hàng hoặc chọn <em>"Mua Ngay"</em> để chuyển đến trang thanh toán.</li>
+                            <li class="mb-2"><strong>Bước 2:</strong> Kiểm tra số lượng và tổng tiền trong giỏ hàng (áp dụng phiên làm việc Session an toàn).</li>
+                            <li class="mb-2"><strong>Bước 3:</strong> Điền địa chỉ nhận hàng (tính phí ship tự động theo tỉnh thành ở Lab 05).</li>
+                            <li><strong>Bước 4:</strong> Thanh toán qua Cổng MoMo / VNPAY hoặc COD nhận hàng (Lab 06).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/layout.js?v=9"></script>
+<script>
+    let currentProduct = null;
+
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    }
+
+    // Lấy ID sản phẩm từ query param ?id=...
+    function getProductId() {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get('id');
+    }
+
+    // Tải chi tiết sản phẩm từ API GET /api/products/{id}
+    function loadProductDetail() {
+        const id = getProductId();
+        if (!id) {
+            showError("Vui lòng cung cấp mã sản phẩm hợp lệ!");
+            return;
+        }
+
+        fetch(`/api/products/${id}`)
+            .then(res => {
+                if (!res.ok) throw new Error("Không thể tải thông tin sản phẩm (Mã lỗi: " + res.status + ")");
+                return res.json();
+            })
+            .then(product => {
+                currentProduct = product;
+                renderProduct(product);
+            })
+            .catch(err => {
+                showError(err.message);
+            });
+    }
+
+    function renderProduct(p) {
+        document.getElementById('loading-state').classList.add('d-none');
+        document.getElementById('product-content').classList.remove('d-none');
+
+        // Điền dữ liệu
+        document.title = `${p.name} - EnglishPro Cửa Hàng`;
+        document.getElementById('breadcrumb-product-name').innerText = p.name;
+        document.getElementById('product-name').innerText = p.name;
+        document.getElementById('product-price').innerText = formatCurrency(p.price);
+        document.getElementById('product-desc').innerText = p.description || 'Không có mô tả chi tiết.';
+        document.getElementById('product-img').src = p.imageUrl || 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&auto=format&fit=crop&q=80';
+        document.getElementById('product-badge-cat').innerText = p.category || 'Học liệu';
+
+        // Badge loại hàng
+        const typeBadge = document.getElementById('product-type-badge');
+        const shippingTitle = document.getElementById('policy-shipping-title');
+        if (p.physical) {
+            typeBadge.className = 'badge bg-primary-subtle text-primary fw-bold px-3 py-2 rounded-pill';
+            typeBadge.innerHTML = '<i class="bi bi-box-seam me-1"></i>Hàng vật lý đóng gói';
+            if (shippingTitle) shippingTitle.innerText = "Giao Toàn Quốc";
+        } else {
+            typeBadge.className = 'badge bg-warning-subtle text-dark fw-bold px-3 py-2 rounded-pill';
+            typeBadge.innerHTML = '<i class="bi bi-lightning-charge-fill me-1"></i>Kích hoạt tức thì';
+            if (shippingTitle) shippingTitle.innerText = "Kích Hoạt Ngay";
+        }
+
+        // Tình trạng kho
+        const stockBadge = document.getElementById('product-stock-badge');
+        const stockHint = document.getElementById('stock-hint');
+        const stockQty = p.stockQuantity != null ? p.stockQuantity : 100;
+        if (stockQty > 0) {
+            stockBadge.className = 'badge bg-success-subtle text-success fw-bold px-3 py-2 rounded-pill';
+            stockBadge.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>Còn hàng (${stockQty} sản phẩm)`;
+            stockHint.innerText = `Tối đa trong kho: ${stockQty}`;
+        } else {
+            stockBadge.className = 'badge bg-danger-subtle text-danger fw-bold px-3 py-2 rounded-pill';
+            stockBadge.innerHTML = `<i class="bi bi-x-circle-fill me-1"></i>Hết hàng`;
+            stockHint.innerText = `Sản phẩm hiện đang tạm hết`;
+        }
+    }
+
+    function showError(msg) {
+        document.getElementById('loading-state').classList.add('d-none');
+        document.getElementById('error-state').classList.remove('d-none');
+        document.getElementById('error-message').innerText = msg;
+    }
+
+    // Thay đổi số lượng mua
+    function changeQty(delta) {
+        const input = document.getElementById('buy-quantity');
+        let val = parseInt(input.value) || 1;
+        val += delta;
+        const max = currentProduct ? currentProduct.stockQuantity : 999;
+        if (val < 1) val = 1;
+        if (val > max) val = max;
+        input.value = val;
+    }
+
+    function validateQty() {
+        const input = document.getElementById('buy-quantity');
+        let val = parseInt(input.value) || 1;
+        const max = currentProduct ? currentProduct.stockQuantity : 999;
+        if (val < 1) val = 1;
+        if (val > max) val = max;
+        input.value = val;
+    }
+
+    // 1. NÚT THÊM VÀO GIỎ HÀNG
+    function addToCartDetail() {
+        if (!currentProduct) return;
+        const qty = parseInt(document.getElementById('buy-quantity').value) || 1;
+
+        fetch('/api/cart/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: currentProduct.id, quantity: qty })
+        })
+        .then(res => res.json())
+        .then(cart => {
+            // Cập nhật số lượng trên navbar badge
+            const navBadge = document.getElementById('nav-cart-badge');
+            if (navBadge) navBadge.innerText = cart.totalQuantity || 0;
+            showCartToast(currentProduct.name, qty);
+        })
+        .catch(err => {
+            alert("Có lỗi khi thêm vào giỏ hàng: " + err.message);
+        });
+    }
+
+    // 2. NÚT MUA NGAY
+    function buyNowDetail() {
+        if (!currentProduct) return;
+        const qty = parseInt(document.getElementById('buy-quantity').value) || 1;
+
+        fetch('/api/cart/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: currentProduct.id, quantity: qty })
+        })
+        .then(res => res.json())
+        .then(() => {
+            // Chuyển hướng ngay sang trang giỏ hàng
+            window.location.href = '/cart.html';
+        })
+        .catch(err => {
+            alert("Có lỗi khi mua ngay: " + err.message);
+        });
+    }
+
+    let toastTimer;
+    function showCartToast(name, qty) {
+        const toast = document.getElementById('cart-toast');
+        document.getElementById('toast-title').innerText = "Đã thêm vào giỏ hàng thành công!";
+        document.getElementById('toast-desc').innerText = `Đã thêm ${qty}x ${name} vào giỏ hàng.`;
+        toast.classList.add('show');
+
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3500);
+    }
+
+    // Khởi động
+    document.addEventListener("DOMContentLoaded", loadProductDetail);
+</script>
+
+</body>
+</html>
