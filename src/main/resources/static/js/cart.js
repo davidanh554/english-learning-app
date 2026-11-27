@@ -345,7 +345,9 @@
             alert("Vui lòng tích chọn ít nhất 1 sản phẩm để tiến hành đặt hàng!");
             return;
         }
-        alert(`🎉 Bạn đã chọn ${selectedIds.length} sản phẩm để thanh toán!\n\nBước tiếp theo chúng ta sẽ làm Lab 05 (Tính phí Ship theo địa chỉ nhận hàng) và Lab 06 (Thanh toán MoMo / COD).`);
+        // Lưu danh sách sản phẩm được chọn để trang checkout xử lý
+        localStorage.setItem('checkout_selected_ids', JSON.stringify(selectedIds));
+        window.location.href = '/checkout.html';
     }
 
     renderCart();

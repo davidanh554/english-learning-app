@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh Toán & Tính Phí Giao Hàng - EnglishPro (Lab 05)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+        .checkout-card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            background: #fff;
+        }
+        .product-mini-thumb {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+        .ghn-badge {
+            background-color: #ffedd5;
+            color: #c2410c;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+
+<div id="header-container"></div>
+
+<div class="container py-5" style="max-width: 1100px;">
+    <!-- BREADCRUMB -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb bg-white p-3 rounded-4 shadow-sm border align-items-center mb-0">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted fw-semibold"><i class="bi bi-house me-1"></i>Trang Chủ</a></li>
+            <li class="breadcrumb-item"><a href="/shop.html" class="text-decoration-none text-muted fw-semibold"><i class="bi bi-shop me-1"></i>Cửa Hàng</a></li>
+            <li class="breadcrumb-item"><a href="/cart.html" class="text-decoration-none text-muted fw-semibold"><i class="bi bi-cart3 me-1"></i>Giỏ Hàng</a></li>
+            <li class="breadcrumb-item active fw-bold text-primary">Thanh Toán & Vận Chuyển (Lab 05)</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <h2 class="fw-extrabold text-dark mb-1">
+                <i class="bi bi-truck text-warning me-2"></i>Thanh Toán & Vận Chuyển
+            </h2>
+            <small class="text-muted">Tích hợp API Giao Hàng Nhanh (GHN) tính cước tự động theo chuẩn Lab 05</small>
+        </div>
+        <span class="ghn-badge"><i class="bi bi-patch-check-fill me-1"></i>Đối tác vận chuyển GHN</span>
+    </div>
+
+    <form id="checkout-form" onsubmit="event.preventDefault(); submitOrder();">
+        <div class="row g-4">
+            <!-- CỘT TRÁI: ĐỊA CHỈ NHẬN HÀNG & PHƯƠNG THỨC THANH TOÁN -->
+            <div class="col-lg-7">
+                <!-- 1. THÔNG TIN NGƯỜI NHẬN -->
+                <div class="card checkout-card p-4 mb-4">
+                    <h5 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-geo-alt-fill text-danger me-2"></i>1. Thông Tin Nhận Hàng
+                    </h5>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Họ và tên người nhận (*):</label>
+                            <input type="text" id="customer-name" class="form-control rounded-3 py-2" placeholder="Nguyễn Văn A" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">Số điện thoại (*):</label>
+                            <input type="tel" id="customer-phone" class="form-control rounded-3 py-2" placeholder="0912345678" pattern="[0-9]{10,11}" required>
+                        </div>
+                    </div>
+
+                    <!-- 3 CẤP ĐỊA CHỈ GHN: TỈNH -> HUYỆN -> XÃ -->
+                    <div class="p-3 rounded-4 bg-light border mb-3">
+                        <div class="fw-bold text-secondary small mb-3">
+                            <i class="bi bi-building me-1"></i>Địa chỉ theo phân cấp hành chính (GHN API):
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold text-dark">Tỉnh / Thành phố (*):</label>
+                                <select id="province-select" class="form-select rounded-3" required>
+                                    <option value="">-- Đang tải... --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold text-dark">Quận / Huyện (*):</label>
+                                <select id="district-select" class="form-select rounded-3" disabled required>
+                                    <option value="">-- Chọn Tỉnh trước --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-semibold text-dark">Phường / Xã (*):</label>
+                                <select id="ward-select" class="form-select rounded-3" disabled required>
+                                    <option value="">-- Chọn Huyện trước --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small">Địa chỉ chi tiết (Số nhà, ngõ, tên đường) (*):</label>
+                        <input type="text" id="customer-address" class="form-control rounded-3 py-2" placeholder="Ví dụ: Số 25 ngõ 12 đường Cầu Giấy" required>
+                    </div>
+                </div>
+
+                <!-- 2. PHƯƠNG THỨC THANH TOÁN -->
+                <div class="card checkout-card p-4">
+                    <h5 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-credit-card-2-front-fill text-primary me-2"></i>2. Phương Thức Thanh Toán
+                    </h5>
+                    <div class="form-check p-3 rounded-3 border mb-2 d-flex align-items-center gap-3">
+                        <input class="form-check-input ms-0" type="radio" name="paymentMethod" id="pay-cod" value="COD" checked>
+                        <label class="form-check-label w-100 cursor-pointer" for="pay-cod">
+                            <div class="fw-bold text-dark"><i class="bi bi-cash-stack text-success me-2"></i>Thanh toán khi nhận hàng (COD)</div>
+                            <small class="text-muted">Kiểm tra kiện hàng và thanh toán trực tiếp cho bưu tá GHN</small>
+                        </label>
+                    </div>
+                    <div class="form-check p-3 rounded-3 border mb-2 d-flex align-items-center gap-3 opacity-90">
+                        <input class="form-check-input ms-0" type="radio" name="paymentMethod" id="pay-momo" value="MOMO">
+                        <label class="form-check-label w-100 cursor-pointer" for="pay-momo">
+                            <div class="fw-bold text-dark"><i class="bi bi-wallet2 text-danger me-2"></i>Ví Điện Tử MoMo (Lab 06)</div>
+                            <small class="text-muted">Quét mã QR MoMo thanh toán tức thì</small>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CỘT PHẢI: TÓM TẮT ĐƠN HÀNG & NÚT ĐẶT HÀNG -->
+            <div class="col-lg-5">
+                <div class="card checkout-card p-4 sticky-top" style="top: 90px;">
+                    <h5 class="fw-bold text-dark mb-3">Tóm tắt đơn hàng</h5>
+
+                    <!-- DANH SÁCH MÓN HÀNG MUA -->
+                    <div id="checkout-items-list" class="mb-3" style="max-height: 250px; overflow-y: auto;">
+                        <div class="text-center py-3 text-muted">Đang tải sản phẩm...</div>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between text-secondary mb-2">
+                        <span>Tiền hàng (Tạm tính):</span>
+                        <span class="fw-bold text-dark" id="summary-subtotal">0 ₫</span>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center text-secondary mb-3">
+                        <span>Cước vận chuyển GHN:</span>
+                        <span class="fw-bold" id="summary-shipping-fee">
+                            <span class="text-muted small fst-italic">Chọn địa chỉ để tính</span>
+                        </span>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="fw-bold fs-5 text-dark">Tổng thanh toán:</span>
+                        <span class="fw-extrabold fs-4 text-success" id="summary-final-total">0 ₫</span>
+                    </div>
+
+                    <button type="submit" id="btn-submit-order" class="btn btn-warning btn-lg w-100 rounded-pill fw-bold text-dark py-3 shadow-sm">
+                        <i class="bi bi-check-circle-fill me-1"></i> Xác Nhận Đặt Hàng
+                    </button>
+                    
+                    <small class="text-center text-muted d-block mt-3" style="font-size: 0.8rem;">
+                        <i class="bi bi-shield-lock me-1"></i>Thông tin đơn hàng được bảo mật và tự động gửi mã vận đơn qua GHN.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/layout.js?v=9"></script>
+<script src="/js/checkout.js?v=1"></script>
+</body>
+</html>

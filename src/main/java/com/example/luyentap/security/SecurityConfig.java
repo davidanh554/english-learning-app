@@ -104,6 +104,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/progress/**", "/api/user-progress/**").permitAll()
                         .requestMatchers("/api/products/**").permitAll()
                         .requestMatchers("/api/cart/**").permitAll()
+                        .requestMatchers("/api/shipping/**").permitAll()
+                        .requestMatchers("/api/orders/**").permitAll()
 
                         // 4. API quản trị yêu cầu quyền ADMIN
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
