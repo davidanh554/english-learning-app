@@ -4,6 +4,9 @@
     window.fetch = async function(...args) {
         let [resource, config] = args;
         config = config || {};
+        if (!config.credentials) {
+            config.credentials = 'include';
+        }
 
         try {
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');

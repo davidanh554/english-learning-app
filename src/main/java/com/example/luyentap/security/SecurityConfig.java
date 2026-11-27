@@ -60,8 +60,8 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 // Kích hoạt cấu hình CORS mặc định
                 .cors(Customizer.withDefaults())
-                // Quản lý session ở chế độ STATELESS
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Quản lý session ở chế độ IF_REQUIRED để duy trì Giỏ hàng Session (Lab 04 & Lab 05)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 // Xử lý lỗi trả về JSON 401 khi chưa đăng nhập
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) -> {
@@ -99,7 +99,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/folders/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/topics/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/vocabularies/**").permitAll()
-                        .requestMatchers("/api/quiz/**").permitAll()
+                        .requestMatchers("/api/quiz/**", "/api/quizzes/**").permitAll()
                         .requestMatchers("/api/ai/**").permitAll()
                         .requestMatchers("/api/progress/**", "/api/user-progress/**").permitAll()
                         .requestMatchers("/api/products/**").permitAll()

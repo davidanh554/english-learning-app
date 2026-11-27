@@ -114,6 +114,9 @@
             // Cập nhật số lượng trên navbar badge
             const navBadge = document.getElementById('nav-cart-badge');
             if (navBadge) navBadge.innerText = cart.totalQuantity || 0;
+            if (cart && cart.itemList) {
+                localStorage.setItem('shopping_cart_items', JSON.stringify(cart.itemList));
+            }
             showCartToast(currentProduct.name, qty);
         })
         .catch(err => {
@@ -121,7 +124,7 @@
         });
     }
 
-    // 2. NÚT MUA NGAY
+    // 2. NÚT MUA NGAY: Chuyển hướng thẳng sang trang Thanh toán Checkout (Lab 05)
     function buyNowDetail() {
         if (!currentProduct) return;
         const qty = parseInt(document.getElementById('buy-quantity').value) || 1;
@@ -132,9 +135,14 @@
             body: JSON.stringify({ productId: currentProduct.id, quantity: qty })
         })
         .then(res => res.json())
-        .then(() => {
-            // Chuyển hướng ngay sang trang giỏ hàng
-            window.location.href = '/cart.html';
+        .then(cart => {
+            localStorage.setItem('checkout_selected_ids', JSON.stringify([currentProduct.id]));
+            if (cart && cart.itemList) {
+                localStorage.setItem('shopping_cart_items', JSON.stringify(cart.itemList));
+                const selected = cart.itemList.filter(i => i.productId === currentProduct.id);
+                localStorage.setItem('checkout_items', JSON.stringify(selected));
+            }
+            window.location.href = '/checkout.html';
         })
         .catch(err => {
             alert("Có lỗi khi mua ngay: " + err.message);

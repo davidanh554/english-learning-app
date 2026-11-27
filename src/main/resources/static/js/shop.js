@@ -73,6 +73,9 @@
         .then(res => res.json())
         .then(cart => {
             updateCartHeader(cart);
+            if (cart && cart.itemList) {
+                localStorage.setItem('shopping_cart_items', JSON.stringify(cart.itemList));
+            }
             showCartToast(productName);
         })
         .catch(err => {
@@ -80,7 +83,7 @@
         });
     }
 
-    // Mua ngay: Thêm vào giỏ hàng và chuyển hướng ngay tới giỏ hàng
+    // Mua ngay: Thêm vào giỏ hàng và chuyển hướng thẳng sang trang Thanh toán (Checkout Lab 05)
     function buyNow(productId, productName) {
         fetch('/api/cart/add', {
             method: 'POST',
@@ -88,8 +91,14 @@
             body: JSON.stringify({ productId: productId, quantity: 1 })
         })
         .then(res => res.json())
-        .then(() => {
-            window.location.href = '/cart.html';
+        .then(cart => {
+            localStorage.setItem('checkout_selected_ids', JSON.stringify([productId]));
+            if (cart && cart.itemList) {
+                localStorage.setItem('shopping_cart_items', JSON.stringify(cart.itemList));
+                const selected = cart.itemList.filter(i => i.productId === productId);
+                localStorage.setItem('checkout_items', JSON.stringify(selected));
+            }
+            window.location.href = '/checkout.html';
         })
         .catch(err => {
             alert("Có lỗi khi mua ngay: " + err.message);

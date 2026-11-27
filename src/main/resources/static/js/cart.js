@@ -15,6 +15,9 @@
                 const container = document.getElementById('cart-content');
                 const items = cart.itemList || [];
 
+                // Lưu bản sao giỏ hàng vào localStorage để đồng bộ với Checkout
+                localStorage.setItem('shopping_cart_items', JSON.stringify(items));
+
                 // Nếu giỏ hàng trống (Lab 04 trang 5)
                 if (items.length === 0) {
                     selectedProductIds.clear();
@@ -347,6 +350,10 @@
         }
         // Lưu danh sách sản phẩm được chọn để trang checkout xử lý
         localStorage.setItem('checkout_selected_ids', JSON.stringify(selectedIds));
+        if (currentCart && currentCart.itemList) {
+            const selectedItems = currentCart.itemList.filter(i => selectedIds.includes(i.productId));
+            localStorage.setItem('checkout_items', JSON.stringify(selectedItems));
+        }
         window.location.href = '/checkout.html';
     }
 

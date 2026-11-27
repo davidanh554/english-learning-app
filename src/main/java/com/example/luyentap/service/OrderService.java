@@ -33,25 +33,63 @@ public class OrderService {
 
     @Transactional
     public Order checkout(CheckoutRequestDTO dto, HttpSession session, String currentUserEmail) {
-        CartDTO cart = cartService.getCart(session);
-        if (cart == null || cart.getItemList() == null || cart.getItemList().isEmpty()) {
-            throw new IllegalStateException("Giỏ hàng đang trống! Vui lòng chọn sản phẩm trước khi thanh toán.");
-        }
-
-        // Lọc các sản phẩm được chọn (nếu có danh sách selectedProductIds từ checkbox giỏ hàng)
         List<CartItemDTO> itemsToOrder = new ArrayList<>();
-        if (dto.getSelectedProductIds() != null && !dto.getSelectedProductIds().isEmpty()) {
-            for (CartItemDTO item : cart.getItemList()) {
-                if (dto.getSelectedProductIds().contains(item.getProductId())) {
-                    itemsToOrder.add(item);
+
+        // 1. Ưu tiên lấy trực tiếp từ items trong DTO (đảm bảo tạo đơn thành công, không phụ thuộc session)
+        if (dto.getItems() != null && !dto.getItems().isEmpty()) {
+            for (CheckoutRequestDTO.CheckoutItemDTO itemDto : dto.getItems()) {
+                if (itemDto.getProductId() != null) {
+                    Product p = productRepository.findById(itemDto.getProductId())
+                            .orElseThrow(() -> new NoSuchElementException("Không tìm thấy sản phẩm ID: " + itemDto.getProductId()));
+                    int qty = (itemDto.getQuantity() != null && itemDto.getQuantity() > 0) ? itemDto.getQuantity() : 1;
+                    itemsToOrder.add(CartItemDTO.builder()
+                            .productId(p.getId())
+                            .name(p.getName())
+                            .price(p.getPrice())
+                            .quantity(qty)
+                            .category(p.getCategory())
+                            .imageUrl(p.getImageUrl())
+                            .isPhysical(p.isPhysical())
+                            .build());
                 }
             }
-        } else {
-            itemsToOrder.addAll(cart.getItemList());
+        }
+
+        // 2. Nếu DTO không gửi items, fallback lấy từ Session giỏ hàng
+        if (itemsToOrder.isEmpty()) {
+            CartDTO cart = cartService.getCart(session);
+            if (cart != null && cart.getItemList() != null && !cart.getItemList().isEmpty()) {
+                if (dto.getSelectedProductIds() != null && !dto.getSelectedProductIds().isEmpty()) {
+                    for (CartItemDTO item : cart.getItemList()) {
+                        if (dto.getSelectedProductIds().contains(item.getProductId())) {
+                            itemsToOrder.add(item);
+                        }
+                    }
+                } else {
+                    itemsToOrder.addAll(cart.getItemList());
+                }
+            }
+        }
+
+        // 3. Nếu vẫn chưa có nhưng có selectedProductIds -> Tìm trực tiếp trong DB
+        if (itemsToOrder.isEmpty() && dto.getSelectedProductIds() != null && !dto.getSelectedProductIds().isEmpty()) {
+            for (Long pid : dto.getSelectedProductIds()) {
+                Product p = productRepository.findById(pid)
+                        .orElseThrow(() -> new NoSuchElementException("Không tìm thấy sản phẩm ID: " + pid));
+                itemsToOrder.add(CartItemDTO.builder()
+                        .productId(p.getId())
+                        .name(p.getName())
+                        .price(p.getPrice())
+                        .quantity(1)
+                        .category(p.getCategory())
+                        .imageUrl(p.getImageUrl())
+                        .isPhysical(p.isPhysical())
+                        .build());
+            }
         }
 
         if (itemsToOrder.isEmpty()) {
-            throw new IllegalStateException("Chưa có sản phẩm nào được chọn để thanh toán!");
+            throw new IllegalStateException("Giỏ hàng đang trống! Vui lòng chọn sản phẩm trước khi thanh toán.");
         }
 
         // 1. Tính tiền hàng tạm tính
@@ -122,10 +160,12 @@ public class OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        // 6. Xóa các sản phẩm đã đặt khỏi giỏ hàng
-        for (CartItemDTO cartItem : itemsToOrder) {
-            cartService.removeFromCart(session, cartItem.getProductId());
-        }
+        // 6. Xóa các sản phẩm đã đặt khỏi giỏ hàng session (nếu có)
+        try {
+            for (CartItemDTO cartItem : itemsToOrder) {
+                cartService.removeFromCart(session, cartItem.getProductId());
+            }
+        } catch (Exception ignored) {}
 
         log.info(" [LAB 05 ORDER] Đã tạo đơn hàng thành công ID: #{} - Tổng tiền: {} VND (Cước GHN: {})",
                 savedOrder.getId(), savedOrder.getTotalPrice(), savedOrder.getGhnTotalFee());

@@ -29,4 +29,16 @@ public class CheckoutRequestDTO {
     private String paymentMethod = "COD";
 
     private List<Long> selectedProductIds;
+
+    // Danh sách chi tiết các món hàng kèm số lượng để không phụ thuộc cứng vào Session
+    private List<CheckoutItemDTO> items;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CheckoutItemDTO {
+        private Long productId;
+        private Integer quantity;
+    }
 }

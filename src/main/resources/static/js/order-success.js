@@ -7,8 +7,14 @@ function loadOrderDetail() {
     const orderId = urlParams.get('orderId');
 
     if (!orderId) {
-        alert("Không tìm thấy mã đơn hàng!");
-        window.location.href = '/shop.html';
+        document.getElementById('order-loading').innerHTML = `
+            <div class="alert alert-warning text-center rounded-3">
+                <i class="bi bi-exclamation-triangle fs-3 d-block mb-2 text-warning"></i>
+                <div class="fw-bold">Không tìm thấy mã đơn hàng!</div>
+                <small class="text-muted d-block mb-3">Vui lòng kiểm tra lại liên kết hoặc quay lại cửa hàng.</small>
+                <a href="/shop.html" class="btn btn-sm btn-primary rounded-pill px-4 fw-bold">Về Cửa Hàng</a>
+            </div>
+        `;
         return;
     }
 
@@ -34,6 +40,22 @@ function loadOrderDetail() {
             document.getElementById('order-subtotal').innerText = formatCurrency(order.subtotal);
             document.getElementById('order-shipping-fee').innerText = formatCurrency(order.ghnTotalFee);
             document.getElementById('order-total-price').innerText = formatCurrency(order.totalPrice);
+
+            const statusEl = document.getElementById('order-shipping-status');
+            if (statusEl) {
+                if (order.shippingStatus === 'READY_TO_PICK') {
+                    statusEl.innerText = 'Sẵn sàng lấy hàng (GHN)';
+                    statusEl.className = 'badge bg-success-subtle text-success fw-bold';
+                } else if (order.shippingStatus === 'DELIVERING') {
+                    statusEl.innerText = 'Đang giao hàng';
+                    statusEl.className = 'badge bg-primary-subtle text-primary fw-bold';
+                } else if (order.shippingStatus === 'DELIVERED') {
+                    statusEl.innerText = 'Đã giao thành công';
+                    statusEl.className = 'badge bg-success text-white fw-bold';
+                } else {
+                    statusEl.innerText = order.shippingStatus || 'Đang xử lý';
+                }
+            }
 
             // Render danh sách sản phẩm trong đơn
             const items = order.items || [];
